@@ -19,4 +19,9 @@ typedef struct {
 int parseLogLine(const char *line, indexEntry *entry, off_t offset);
 int buildIndex(const char *logFile, const char *indexFile);
 
+// function to query 
+void displayIndexStats(const char *indexFile);
+int queryByLevel(const char *logFile, const char *indexFile, const char *level);
+int queryByTime(const char *logFile, const char *indexFile, time_t startTime, time_t endTime);
+
 #endif
