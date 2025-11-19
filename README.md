@@ -18,6 +18,7 @@ A fast and efficient C-based log file indexer that enables quick querying of lar
   - [View Index Statistics](#view-index-statistics)
 - [Log File Format](#log-file-format)
 - [How It Works](#how-it-works)
+- [Program Flow](#program-flow)
 - [Performance](#performance)
 - [Troubleshooting](#troubleshooting)
 
@@ -35,16 +36,17 @@ A fast and efficient C-based log file indexer that enables quick querying of lar
 ```
 .
 ├── include/
-│   ├── cli.h           # CLI interface declarations
-│   └── index.h         # Core indexing structures and functions
+│   ├── cli.h            # CLI interface declarations
+│   └── index.h          # Core indexing structures and functions
 ├── src/
-│   ├── main.c          # Entry point and command dispatcher
-│   ├── index-builder.c # Index creation logic
-│   ├── query.c         # Query processing functions
-│   └── cli.c           # Interactive CLI implementation
-├── Makefile            # Build configuration
-├── .gitignore          # Git ignore rules
-└── sample.log          # Sample log file for testing
+│   ├── main.c           # Entry point and command dispatcher
+│   ├── index-builder.c  # Index creation logic
+│   ├── query.c          # Query processing functions
+│   └── cli.c            # Interactive CLI implementation
+├── Makefile             # Build configuration
+├── .gitignore           # Git ignore rules
+├── README.md            # Project Documentation
+└── sample.log           # Sample log file for testing
 ```
 
 ## Building
@@ -161,6 +163,87 @@ Supported log levels: DEBUG, INFO, WARN, ERROR, CRITICAL, FATAL
 2. **Querying**: Instead of scanning the entire log file, queries use the index to jump directly to relevant log entries, making searches extremely fast even for large files.
 
 3. **Storage**: The index file (`.idx`) is a binary file containing an array of `indexEntry` structures, enabling efficient random access.
+
+## Program Flow
+
+```mermaid
+graph TD
+    A[Start: log_indexer] --> B{Parse Command}
+    
+    B -->|build| C[Build Index]
+    B -->|query| D[Interactive Mode]
+    B -->|query-level| E[Query by Level]
+    B -->|query-time| F[Query by Time]
+    B -->|stats| G[Display Stats]
+    
+    C --> C1[fopen - Open Log File]
+    C1 --> C2[fgets - Read Line into Buffer]
+    C2 --> C3[parseLogLine<br/>Extract: timestamp, level, offset]
+    C3 --> C4[Create indexEntry struct<br/>offset, timestamp, level, lineLength]
+    C4 --> C5[write - Write struct to Index File]
+    C5 --> C6{More Lines?}
+    C6 -->|Yes| C2
+    C6 -->|No| C7[fclose, close - Close Files]
+    C7 --> Z[End]
+    
+    D --> D1[Display Menu]
+    D1 --> D2[fgets - Get User Input]
+    D2 --> D3{Command Type}
+    D3 -->|Level| E
+    D3 -->|Time| F
+    D3 -->|Stats| G
+    D3 -->|All| D4[Query All Levels]
+    D3 -->|Quit| Z
+    D4 --> D1
+    
+    E --> E1[open - Open Index File O_RDONLY]
+    E1 --> E2[read - Read indexEntry struct]
+    E2 --> E3{strcmp<br/>Level Match?}
+    E3 -->|Yes| E4[lseek - Seek to offset]
+    E3 -->|No| E5{More Entries?}
+    E4 --> E6[read lineLength bytes<br/>into lineBuffer]
+    E6 --> E7[printf - Display Log Line]
+    E7 --> E5
+    E5 -->|Yes| E2
+    E5 -->|No| E8[close - Close Files]
+    E8 --> Z
+    
+    F --> F1[open - Open Index File O_RDONLY]
+    F1 --> F2[read - Read indexEntry struct]
+    F2 --> F3{timestamp >= startTime<br/>timestamp <= endTime?}
+    F3 -->|Yes| F4[lseek - Seek to offset]
+    F3 -->|No| F5{More Entries?}
+    F4 --> F6[read lineLength bytes<br/>into lineBuffer]
+    F6 --> F7[printf - Display Log Line]
+    F7 --> F5
+    F5 -->|Yes| F2
+    F5 -->|No| F8[close - Close Files]
+    F8 --> Z
+    
+    G --> G1[open - Open Index File O_RDONLY]
+    G1 --> G2[lseek SEEK_END<br/>Calculate: fileSize / sizeof indexEntry]
+    G2 --> G3[lseek SEEK_SET<br/>read - First Entry]
+    G3 --> G4[lseek SEEK_END<br/>read - Last Entry]
+    G4 --> G5[printf - Display Statistics<br/>entryCount, timestamps]
+    G5 --> G6[close - Close File]
+    G6 --> Z
+    
+    subgraph "Binary Index File Structure"
+    N[Array of indexEntry structs<br/>----<br/>struct indexEntry:<br/>- off_t offset<br/>- time_t timestamp<br/>- char level MAX_LEVEL<br/>- size_t lineLength]
+    end
+    
+    classDef buildClass fill:#505050,stroke:#333,stroke-width:2px,color:#fff
+    classDef interactiveClass fill:#606060,stroke:#333,stroke-width:2px,color:#fff
+    classDef queryClass fill:#707070,stroke:#333,stroke-width:2px,color:#fff
+    classDef statsClass fill:#808080,stroke:#333,stroke-width:2px,color:#fff
+    classDef startEndClass fill:#404040,stroke:#333,stroke-width:2px,color:#fff
+    
+    class C,C1,C2,C3,C4,C5,C6,C7 buildClass
+    class D,D1,D2,D3,D4 interactiveClass
+    class E,E1,E2,E3,E4,E5,E6,E7,E8,F,F1,F2,F3,F4,F5,F6,F7,F8 queryClass
+    class G,G1,G2,G3,G4,G5,G6 statsClass
+    class A,B,Z startEndClass
+```
 
 ## Performance
 
