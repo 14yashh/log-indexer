@@ -55,30 +55,42 @@ A fast and efficient C-based log file indexer that enables quick querying of lar
 - GCC compiler
 - Make
 
-### Compile
+### Build the Program
 ```bash
 make
 ```
 
-This creates the `log_indexer` executable in the project root.
+This compiles the source code and creates the `log_indexer` executable in the project root.
 
 ### Quick Start
-To quickly test the indexer with the included sample log file:
+The fastest way to get started:
 ```bash
-make run
+make run      # Builds program and index automatically, then launches interactive mode
 ```
 
-This will build the project, create an index from `sample.log`, and launch the interactive query mode where you can explore different log levels and time ranges.
+The `make run` command will:
+1. Build the program if needed
+2. Create the index from `sample.log` if it doesn't exist
+3. Launch interactive query mode
+
+Or build everything step by step:
+```bash
+make          # Build the program
+make build-index # Build the index
+make run      # Run interactive mode
+```
 
 ### Other Make Targets
 ```bash
-make clean      # Remove build artifacts
-make rebuild    # Clean and rebuild
-make run        # Run interactive query mode with sample.log
-make test       # Run basic functionality tests
-make install    # Install to /usr/local/bin (requires sudo)
-make uninstall  # Remove from /usr/local/bin
-make help       # Show all available commands
+make clean       # Remove build artifacts (keeps index)
+make clean-all   # Remove build artifacts and index file
+make rebuild     # Clean and rebuild from scratch
+make build-index # Build index from sample.log only
+make run         # Run interactive mode (auto-builds everything if needed)
+make test        # Build index and run automated tests
+make install     # Install to /usr/local/bin (requires sudo)
+make uninstall   # Remove from /usr/local/bin
+make help        # Show all available commands
 ```
 
 ## Usage
