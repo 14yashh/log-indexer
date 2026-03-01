@@ -41,22 +41,27 @@ $(TARGET): $(OBJS)
 	@echo "Build complete! Executable: $(TARGET)"
 
 # Compile source files to object files
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.c $(HEADERS)
+$(BUILD_DIR)/main.o: $(SRC_DIR)/main.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/main.c -o $(BUILD_DIR)/main.o
 
-$(BUILD_DIR)/index-builder.o: $(SRC_DIR)/index-builder.c $(HEADERS)
+$(BUILD_DIR)/index-builder.o: $(SRC_DIR)/index-builder.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/index-builder.c -o $(BUILD_DIR)/index-builder.o
 
-$(BUILD_DIR)/query.o: $(SRC_DIR)/query.c $(HEADERS)
+$(BUILD_DIR)/query.o: $(SRC_DIR)/query.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/query.c -o $(BUILD_DIR)/query.o
 
-$(BUILD_DIR)/cli.o: $(SRC_DIR)/cli.c $(HEADERS)
+$(BUILD_DIR)/cli.o: $(SRC_DIR)/cli.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/cli.c -o $(BUILD_DIR)/cli.o
 
 # Clean build artifacts
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 	@echo "Clean complete!"
+
+# Clean everything including index
+clean-all: clean
+	rm -f logs.idx
+	@echo "Removed index file. Full clean complete!"
 
 # Clean and rebuild
 rebuild: clean all
@@ -72,8 +77,18 @@ test: $(TARGET)
 	@echo "Querying ERROR logs..."
 	./$(TARGET) query-level sample.log logs.idx ERROR
 
+# Build index only
+build-index: $(TARGET)
+	@echo "Building index from sample.log..."
+	./$(TARGET) build sample.log logs.idx
+
 # Run interactive query mode
 run: $(TARGET)
+	@if [ ! -f logs.idx ]; then \
+		echo "Index file not found. Building index first..."; \
+		./$(TARGET) build sample.log logs.idx; \
+		echo ""; \
+	fi
 	./$(TARGET) query sample.log logs.idx
 
 # Install (optional - copy to /usr/local/bin)
@@ -96,10 +111,14 @@ help:
 	@echo "  make          - Build the project"
 	@echo "  make all      - Build the project (same as make)"
 	@echo "  make clean    - Remove build artifacts"
+	@echo "  make clean-all- Remove build artifacts and index file"
 	@echo "  make rebuild  - Clean and rebuild"
 	@echo ""
+	@echo "Index Targets:"
+	@echo "  make build-index - Build index from sample.log"
+	@echo ""
 	@echo "Run Targets:"
-	@echo "  make run      - Run interactive query mode"
+	@echo "  make run      - Run interactive query mode (auto-builds index if needed)"
 	@echo "  make test     - Build index and run basic tests"
 	@echo ""
 	@echo "Install Targets:"
@@ -108,4 +127,4 @@ help:
 	@echo ""
 	@echo "  make help     - Show this help message"
 
-.PHONY: all clean rebuild test run install uninstall help
+.PHONY: all clean clean-all rebuild test build-index run install uninstall help
