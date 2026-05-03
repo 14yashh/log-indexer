@@ -62,6 +62,18 @@ make
 
 This compiles the source code and creates the `log_indexer` executable in the project root.
 
+### Manual Compilation (Without Make)
+If you don't have Make or prefer to compile manually:
+```bash
+gcc -o log_indexer src/main.c src/index-builder.c src/query.c src/cli.c -Iinclude -Wall -Wextra -g
+```
+
+This creates the `log_indexer` executable. You can then build the index and run it manually:
+```bash
+./log_indexer build sample.log logs.idx
+./log_indexer query sample.log logs.idx
+```
+
 ### Quick Start
 The fastest way to get started:
 ```bash
